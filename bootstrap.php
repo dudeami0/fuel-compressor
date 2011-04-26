@@ -12,8 +12,7 @@
  * @link       http://fuelphp.com
  */
 
-
-Autoloader::add_core_namespace('Auth');
+Autoloader::add_core_namespace('Compressor');
 
 Autoloader::add_classes(array(
 	'Compressor\\Compressor'       => __DIR__.'/classes/compressor.php',
