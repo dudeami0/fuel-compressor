@@ -24,15 +24,14 @@ class Compressor {
 	/**
 	 * Compresses JS code or files given to it. The first input can either be an array or a string.
 	 *
-	 * Arrays must be a list of files, and relevant paths will use the assets/js/ folder.
-	 *
-	 * Note: The file is automatically saved to the your assets/js/ folder.
+	 * Arrays must be a list of files. Note no extension can be given.
 	 *
 	 * @param   Mixed   $input      The JavaScript files or code to compress
 	 * @param   string  $filename   Either null to return, or the filename of the new file (with no extensions).
 	 * @param   bool    $force      If on, ignores any checks to update.
 	 */
-	function js($input, $filename = null, $force = false) {
+	static function js($input, $filename = null, $force = false) {
+		\Config::load('compressor', 'compressor');
 		// To make sure production runs well, return the asset tag.
 		if (\Config::get('environment') === \Fuel::PRODUCTION)
 			return \Asset::js($filename.'.js');
@@ -40,16 +39,12 @@ class Compressor {
 		$code = '';
 		$return = $path = null;
 		$lastmodified = $merged_lastmodified = 0;
+		$path = \Config::get('compressor.cache_dir') . \Config::get('asset.js_dir');
 		if (is_array($input)) {
 				// Inital loop
 				for ($i = 0; $i < count($input); $i++) {
 					// Get the location
 					$input[$i] = \Asset::find_file($input[$i], 'js');
-					// If we need to make the path,
-					if (is_null($path) && $input[$i] !== false) {
-						$pos = strrpos($input[0], '/') > strrpos($input[0], '\\') ? strrpos($input[0], '/') : strrpos($input[0], '\\');
-						$path = \DOCROOT.substr($input[0], 0, $pos+1);
-					}
 					// Finally, check if this is newer than our other files
 					if (filemtime($input[$i]) > $lastmodified)
 						$lastmodified = filemtime($input[$i]);
@@ -82,15 +77,13 @@ class Compressor {
 	/**
 	 * Compresses CSS code or files given to it. The first input can either be an array or a string.
 	 *
-	 * Arrays must be a list of files, and relevant paths will use the assets/css/ folder.
-	 *
-	 * Note: The file is automatically saved to the your assets/css/ folder.
+	 * Arrays must be a list of files. Note no extension is given.
 	 *
 	 * @param   Mixed   $input      The CSS files or code to compress
 	 * @param   string  $filename   Either null to return, or the filename of the new file (with no extensions).
 	 * @param   bool    $force      If on, ignores any checks to update.
 	 */
-	function css($input, $filename = null, $force = false) {
+	static function css($input, $filename = null, $force = false) {
 		// To make sure production runs well, return the asset tag.
 		if (\Config::get('environment') === \Fuel::PRODUCTION)
 			return \Asset::css($filename.'.css');
@@ -98,16 +91,12 @@ class Compressor {
 		$code = '';
 		$return = $path = null;
 		$lastmodified = $merged_lastmodified = 0;
+		$path = \Config::get('compressor.cache_dir') . \Config::get('asset.css_dir');
 		if (is_array($input)) {
 				// Inital loop
 				for ($i = 0; $i < count($input); $i++) {
 					// Get the location
 					$input[$i] = \Asset::find_file($input[$i], 'css');
-					// If we need to make the path,
-					if (is_null($path) && $input[$i] !== false) {
-						$pos = strrpos($input[0], '/') > strrpos($input[0], '\\') ? strrpos($input[0], '/') : strrpos($input[0], '\\');
-						$path = \DOCROOT.substr($input[0], 0, $pos+1);
-					}
 					// Finally, check if this is newer than our other files
 					if (filemtime($input[$i]) > $lastmodified)
 						$lastmodified = filemtime($input[$i]);
@@ -143,7 +132,7 @@ class Compressor {
 	 *
 	 * @param   Mixed   $input   The HTML files or code to compress
 	 */
-	function html($input) {
+	static function html($input) {
 		$compressor = new HtmlCompressor();
 		return $compressor->html_compress($input);
 	}
