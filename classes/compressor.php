@@ -29,8 +29,11 @@ class Compressor {
 	 * @param   Mixed   $input      The JavaScript files or code to compress
 	 * @param   string  $filename   Either null to return, or the filename of the new file (with no extensions).
 	 * @param   bool    $force      If on, ignores any checks to update.
+	 * @return  Mixed               If $filename is null, returns the compressed script. Else returns a script
+	 *                              tag to the file on success, or false if failed to write the file.
 	 */
 	static function js($input, $filename = null, $force = false) {
+		\Config::load('asset', 'asset');
 		\Config::load('compressor', 'compressor');
 		// To make sure production runs well, return the asset tag.
 		if (\Config::get('environment') === \Fuel::PRODUCTION)
@@ -46,18 +49,19 @@ class Compressor {
 					// Get the location
 					$input[$i] = \Asset::find_file($input[$i], 'js');
 					// Finally, check if this is newer than our other files
-					if (filemtime($input[$i]) > $lastmodified)
-						$lastmodified = filemtime($input[$i]);
+					if (!$force && $input[$i] !== false && filemtime(DOCROOT.$input[$i]) > $lastmodified)
+						$lastmodified = filemtime(DOCROOT.$input[$i]);
 				}
-				// Check if the output file exists, and get its modified time.
-				if (is_file($path.$filename.'.js'))
+				// Check if the output file exists, and get its modified time
+				if (!$force && file_exists($path.$filename.'.js'))
 					$merged_lastmodified = filemtime($path.$filename.'.js');
 				// We need to update, start reading!
-				if ($merged_lastmodified < $lastmodified)
+				if ($force || $merged_lastmodified < $lastmodified) {
 					for ($i = 0; $i < count($input); $i++) {
 						if ($input[$i] !== false)
 							$code .= file_get_contents($input[$i]);
 					}
+				}
 		} else
 			$code = $input;
 		// Check if code is empty or not
@@ -65,7 +69,7 @@ class Compressor {
 			return '';
 		$packer = new JavaScriptPacker($code);
 		$code = $packer->pack();
-		if ($filename !== null && !empty($code)) {
+		if ($force || ($filename !== null && !empty($code))) {
 			$return = file_put_contents($path.$filename.'.js', $code);
 			$return = $return !== false ? \Asset::js($filename . '.js') : false;
 		} else if ($filename !== null && is_file($path.$filename.'.js')) {
@@ -82,8 +86,12 @@ class Compressor {
 	 * @param   Mixed   $input      The CSS files or code to compress
 	 * @param   string  $filename   Either null to return, or the filename of the new file (with no extensions).
 	 * @param   bool    $force      If on, ignores any checks to update.
+	 * @return  Mixed               If $filename is null, returns the compressed script. Else returns a script
+	 *                              tag to the file on success, or false if failed to write the file.
 	 */
 	static function css($input, $filename = null, $force = false) {
+		\Config::load('asset', 'asset');
+		\Config::load('compressor', 'compressor');
 		// To make sure production runs well, return the asset tag.
 		if (\Config::get('environment') === \Fuel::PRODUCTION)
 			return \Asset::css($filename.'.css');
@@ -98,25 +106,26 @@ class Compressor {
 					// Get the location
 					$input[$i] = \Asset::find_file($input[$i], 'css');
 					// Finally, check if this is newer than our other files
-					if (filemtime($input[$i]) > $lastmodified)
-						$lastmodified = filemtime($input[$i]);
+					if (!$force && $input[$i] !== false && filemtime(DOCROOT.$input[$i]) > $lastmodified)
+						$lastmodified = filemtime(DOCROOT.$input[$i]);
 				}
-				// Check if the output file exists, and get its modified time.
-				if (is_file($path.$filename.'.css'))
+				// Check if the output file exists, and get its modified time
+				if (!$force && file_exists($path.$filename.'.css'))
 					$merged_lastmodified = filemtime($path.$filename.'.css');
 				// We need to update, start reading!
-				if ($merged_lastmodified < $lastmodified)
+				if ($force || $merged_lastmodified < $lastmodified) {
 					for ($i = 0; $i < count($input); $i++) {
 						if ($input[$i] !== false)
 							$code .= file_get_contents($input[$i]);
 					}
+				}
 		} else
 			$code = $input;
 		// Check if code is empty or not
 		if ($filename === null && empty($code))
 			return '';
 		$code = CssMin::minify($code);
-		if ($filename !== null && !empty($code)) {
+		if ($force || ($filename !== null && !empty($code))) {
 			$return = file_put_contents($path.$filename.'.css', $code);
 			$return = $return !== false ? \Asset::css($filename . '.css') : false;
 		} else if ($filename !== null && is_file($path.$filename.'.css')) {
